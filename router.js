@@ -121,6 +121,8 @@ var js_pcb = js_pcb || {};
 			this.unmark_distances();
 			this.reset_areas();
 			this.shuffle_netlist();
+
+
 			this.m_netlist.sort(function(n1, n2)
 			{
 				if (n1.m_area === n2.m_area) return n1.m_radius - n2.m_radius;
@@ -220,6 +222,7 @@ var js_pcb = js_pcb || {};
 		}
 
 		//set grid node to value
+		// ffy comment: 3D array to 1D array, n[x][y][z]->m_node[z * width * height + y * width + x]
 		set_node(n, value)
 		{
 			this.m_nodes[(this.m_stride*n[2])+(n[1]*this.m_width)+n[0]] = value;
@@ -237,7 +240,7 @@ var js_pcb = js_pcb || {};
 			let w = this.m_width;
 			let h = this.m_height;
 			let d = this.m_depth;
-			let gn = this.get_node;
+			//let gn = this.get_node;
 			let sort_nodes = [];
 			let x, y, z;
 			[x, y, z] = n;
@@ -251,8 +254,9 @@ var js_pcb = js_pcb || {};
 					&& (0 <= nz) && (nz < d))
 				{
 					let n = [nx, ny, nz];
-					let mark = gn.call(this, n);
-					if (mark !== 0) sort_nodes.push([mark, n]);
+					//let mark = gn.call(this, n);
+					//if (mark !== 0) sort_nodes.push([mark, n]);
+					if(this.get_node(n) !== 0) node.push(n);
 				}
 			}
 			return sort_nodes;
@@ -264,7 +268,7 @@ var js_pcb = js_pcb || {};
 			let w = this.m_width;
 			let h = this.m_height;
 			let d = this.m_depth;
-			let gn = this.get_node;
+			//let gn = this.get_node;
 			let nodes = [];
 			let x, y, z;
 			[x, y, z] = n;
@@ -278,7 +282,8 @@ var js_pcb = js_pcb || {};
 					&& (0 <= nz) && (nz < d))
 				{
 					let n = [nx, ny, nz];
-					if (gn.call(this, n) === 0) nodes.push(n);
+					//if (gn.call(this, n) === 0) nodes.push(n);
+					if (this.get_node(n) === 0) nodes.push(n);
 				}
 			}
 			return nodes;
@@ -319,8 +324,8 @@ var js_pcb = js_pcb || {};
 		//flood fill distances from starts till ends covered
 		mark_distances(vec, radius, via, gap, starts, ends)
 		{
-			let gn = this.get_node;
-			let sn = this.set_node;
+			let gn = this.get_node; // ffy comment: Similar to function pointer of get_node(n);
+			let sn = this.set_node; // ffy comment: Same as above
 			let anm = this.all_not_marked;
 			let ans = this.all_not_shorting;
 			let via_vectors = this.m_via_vectors;
@@ -329,8 +334,8 @@ var js_pcb = js_pcb || {};
 			let vias_nodes = new Map();
 			while (frontier.size || vias_nodes.size)
 			{
-				for (let node of frontier) sn.call(this, node, distance);
-				if (ends.every((node) => { return gn.call(this, node); })) break;
+				for (let node of frontier) sn.call(this, node, distance); // ffy comment: Same as this.set_node(node, distance);
+				if (ends.every((node) => { return gn.call(this, node); })) break; // ffy comment: Check if all end node are marked.
 				let new_nodes = new NodeSet();
 				for (let node of frontier)
 				{
@@ -615,10 +620,12 @@ var js_pcb = js_pcb || {};
 					let y = Math.trunc(this.m_terminals[index][2][1]+0.5);
 					ends.push([x, y, z]);
 				}
+				// ffy comment: Check if the end point has been visited
 				let search = ends.find(function(node) { return visited.has(node); });
 				if (search !== undefined) {
-					continue; 
+					continue; //ffy comment: This end point has been visited already
 				}
+				// ffy comment: This end point has not been visited yet
 				for (let z = 0; z < this.m_pcb.m_depth; ++z)
 				{
 					let x = Math.trunc(this.m_terminals[index-1][2][0]+0.5);
