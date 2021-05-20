@@ -32,6 +32,7 @@ function pcb_thread(paramater_array)
 	let path_range_x_even_layer = flood_range_x_even_layer + 0;
 	let path_range_y_odd_layer = flood_range_y_odd_layer + 0;
 
+	// ffy comment: odd layer and even layer can have different routing vectors.
 	let routing_flood_vectorss =
 			[gen_vectors(flood_range, flood_range_x_even_layer, flood_range),
 			gen_vectors(flood_range, flood_range, flood_range_y_odd_layer)];

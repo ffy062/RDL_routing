@@ -240,7 +240,7 @@ var js_pcb = js_pcb || {};
 			let w = this.m_width;
 			let h = this.m_height;
 			let d = this.m_depth;
-			//let gn = this.get_node;
+			let gn = this.get_node;
 			let sort_nodes = [];
 			let x, y, z;
 			[x, y, z] = n;
@@ -254,9 +254,8 @@ var js_pcb = js_pcb || {};
 					&& (0 <= nz) && (nz < d))
 				{
 					let n = [nx, ny, nz];
-					//let mark = gn.call(this, n);
-					//if (mark !== 0) sort_nodes.push([mark, n]);
-					if(this.get_node(n) !== 0) node.push(n);
+					let mark = gn.call(this, n);
+					if (mark !== 0) sort_nodes.push([mark, n]);
 				}
 			}
 			return sort_nodes;
