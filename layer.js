@@ -119,7 +119,7 @@ var js_pcb = js_pcb || {};
 		hit_line(l)
 		{
 			this.m_test += 1;
-			let bb = this.get_aabb(l);
+			let bb = this.get_aabb(l); // ffy comment: [0]minx, [1]miny, [2]maxx, [3]maxy
 			for (let y = bb[1]; y <= bb[3]; ++y)
 			{
 				for (let x = bb[0]; x <= bb[2]; ++x)
@@ -127,7 +127,7 @@ var js_pcb = js_pcb || {};
 					let b = this.m_buckets[y * this.m_width + x];
 					for (let i = 0; i < b.length; i++)
 					{
-						let record = b[i];
+						let record = b[i]; // ffy comment: type Line
 						if (record.m_id === this.m_test) continue;
 						record.m_id = this.m_test;
 						let d = l.m_radius + record.m_line.m_radius + Math.max(l.m_gap, record.m_line.m_gap);

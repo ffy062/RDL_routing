@@ -294,9 +294,13 @@ var js_pcb = js_pcb || {};
 			let gsp = this.grid_to_space_point;
 			let gp = gsp.call(this, n);
 			let distance = this.get_node(n);
+			// ffy comment: nm : [0] mark distance calculate in mark_distance(), [1] node info
 			let marked_nodes = this.all_marked(vec, n).filter((mn) =>
 			{
+				// ffy comment: Since we are finding path from end to start, the distance we choose must 
+				// be smaller then the current distance.
 				if ((distance - mn[0]) <= 0) return false;
+				// ffy comment: use the selected distance function to calculate distance between nearby points.
 				mn[0] = dfunc(gsp.call(this, mn[1]), gp);
 				return true;
 			});
@@ -321,6 +325,7 @@ var js_pcb = js_pcb || {};
 		}
 
 		//flood fill distances from starts till ends covered
+		// ffy comment: Perform A* like algorithm to mark the distance form starts to ends 
 		mark_distances(vec, radius, via, gap, starts, ends)
 		{
 			let gn = this.get_node; // ffy comment: Similar to function pointer of get_node(n);
@@ -351,6 +356,8 @@ var js_pcb = js_pcb || {};
 						new_vias_nodes.add(new_node);
 					}
 				}
+				// ffy comment: If via cost greater than 0, the distance value will be higher
+				// although physical distance is the same.
 				if (new_vias_nodes.size) vias_nodes.set(distance+this.m_viascost, new_vias_nodes);
 				let delay_nodes = vias_nodes.get(distance);
 				if (delay_nodes !== undefined)
@@ -597,6 +604,7 @@ var js_pcb = js_pcb || {};
 					path.push(search);
 					return [path, true];
 				}
+				// ffy comment: Set path_node to current node's nearest node
 				path_node = nearer_nodes[0];
 			}
 		}
@@ -634,6 +642,7 @@ var js_pcb = js_pcb || {};
 				this.m_pcb.mark_distances(this.m_pcb.m_routing_flood_vectors, this.m_radius, this.m_via, this.m_gap,
 					 						visited, ends);
 				let sorted_ends = [];
+				// ffy comment: push (distance from already visited nodes, end node) into sorted_ends
 				for (let node of ends) sorted_ends.push([this.m_pcb.get_node(node), node]);
 				sorted_ends.sort(function(s1, s2) { return s1[0] - s2[0]; });
 				let result = this.backtrack_path(visited, sorted_ends[0][1], this.m_radius, this.m_via, this.m_gap);
