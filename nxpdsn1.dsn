@@ -2,10 +2,22 @@
     (resolution mm 10)
     (unit mm)
     (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
     (layer B.Cu
       (type signal)
       (property
         (index 1)
+      )
+    )
+    (layer C.Cu
+      (type signal)
+      (property
+        (index 2)
       )
     )
     (rule
