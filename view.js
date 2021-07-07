@@ -43,6 +43,9 @@ var js_pcb = js_pcb || {};
 		layers.push(pcb.append("g")
 			.attr("stroke", "white"));
 
+		// ffy comment: Add variable for calculating via number and approximate wire length
+		let wire_length = 0, via_num = 0;
+
 		//add tracks
 		for (let track of pcb_data[1])
 		{
@@ -50,6 +53,7 @@ var js_pcb = js_pcb || {};
 			[track_radius, , , , paths] = track;
 			for (let path of paths)
 			{
+				// ffy comment: path[0] = first node's [x, y, z] ... 
 				let node, start = 0;
 				let d = path[start][2];
 				for (node = 1; node < path.length; ++node)
@@ -60,6 +64,8 @@ var js_pcb = js_pcb || {};
 						layers[d].append("path")
 							.attr("stroke-width", track_radius * 2)
 							.attr("d", path_func(path.slice(start, node)));
+						
+						wire_length += node- start;
 					}
 					start = node;
 					d = path[start][2];
@@ -69,6 +75,8 @@ var js_pcb = js_pcb || {};
 					layers[d].append("path")
 						.attr("stroke-width", track_radius * 2)
 						.attr("d", path_func(path.slice(start, node)));
+					
+					wire_length += node- start;
 				}
 			}
 		}
@@ -117,11 +125,16 @@ var js_pcb = js_pcb || {};
 							.attr("cy", path[node][1])
 							.attr("r", via_radius)
 							.attr("fill", "white");
+						via_num += 1;
 					}
 					terminal_z = path[node][2];
 				}
 			}
 		}
+
+		// ffy comment: output via number and wire length to console
+		console.log("approximate wire length = " + wire_length);
+		console.log("via number = " + via_num);
 	}
 
 	js_pcb.view_pcb = view_pcb;

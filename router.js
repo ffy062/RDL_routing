@@ -604,7 +604,9 @@ var js_pcb = js_pcb || {};
 					path.push(search);
 					return [path, true];
 				}
-				// ffy comment: Set path_node to current node's nearest node
+				// ffy comment: select point by dsitance, don't avoid using via
+				//path_node.sort((a, b) => {return a[0] - b[0]; });
+				// ffy comment: Set path_node to current node's nearest node, avoid using via
 				path_node = nearer_nodes[0];
 			}
 		}
