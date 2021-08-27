@@ -182,7 +182,7 @@ var js_pcb = js_pcb || {};
 	//			let end_time = std::chrono::high_resolution_clock::now();
 	//			std::chrono::duration<float> elapsed = end_time - start_time;
 	//			if (elapsed.count() >= timeout) return false;
-				if (this.m_verbosity >= 1) postMessage(this.output_pcb());
+				if (this.m_verbosity >= 1) postMessage([this.output_pcb(), 0]);
 			}
 			return true;
 		}
@@ -190,6 +190,7 @@ var js_pcb = js_pcb || {};
 		//cost of board in complexity terms
 		cost()
 		{
+			// ffy comment: only condiser wire length
 			let sum = 0;
 			for (let net of this.m_netlist) for (let path of net.m_paths) sum += path.length;
 			return sum;
@@ -305,7 +306,9 @@ var js_pcb = js_pcb || {};
 				return true;
 			});
 			marked_nodes.sort(function(s1, s2) { return s1[0] - s2[0]; });
+	
 			return marked_nodes.map(function(mn) { return mn[1]; });
+			//return marked_nodes;
 		}
 
 		//generate all grid points surrounding node that are not shorting with an existing track
@@ -584,18 +587,25 @@ var js_pcb = js_pcb || {};
 			{
 				path.push(path_node);
 				let nearer_nodes = [];
+				let m_n = [];
 				for (let node of this.m_pcb.all_not_shorting(
 					this.m_pcb.all_nearer_sorted(this.m_pcb.m_routing_path_vectors, path_node, this.m_pcb.m_dfunc),
 					path_node, radius, gap))
 				{
 					nearer_nodes.push(node);
+					//m_n.push(node);
 				}
 				for (let node of this.m_pcb.all_not_shorting(
 					this.m_pcb.all_nearer_sorted(via_vectors, path_node, this.m_pcb.m_dfunc),
 					path_node, via, gap))
 				{
 					nearer_nodes.push(node);
+					//m_n.push(node);
 				}
+
+				//m_n.sort((a, b)=>{return a[0] - b[0]});
+				//nearer_nodes = m_n.map(function(mn) { return mn[1]; });
+
 				if (!nearer_nodes.length) return [[], false];
 				let search = nearer_nodes.find(function(node) { return visited.has(node); });
 				if (search !== undefined)
@@ -604,8 +614,6 @@ var js_pcb = js_pcb || {};
 					path.push(search);
 					return [path, true];
 				}
-				// ffy comment: select point by dsitance, don't avoid using via
-				//path_node.sort((a, b) => {return a[0] - b[0]; });
 				// ffy comment: Set path_node to current node's nearest node, avoid using via
 				path_node = nearer_nodes[0];
 			}

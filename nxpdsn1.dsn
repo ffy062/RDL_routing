@@ -14,12 +14,6 @@
         (index 1)
       )
     )
-    (layer C.Cu
-      (type signal)
-      (property
-        (index 2)
-      )
-    )
     (rule
       (width 154)
       (clearance 5.1)

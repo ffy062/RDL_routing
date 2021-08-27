@@ -25,11 +25,11 @@ function handleOnGo(evt)
 		worker = new Worker('worker.js');
 		worker.addEventListener('message', function(event)
 		{
-			if (event.data.length)
+			if (event.data[0].length)
 			{
 				//view the pcb output
 				let scale = +document.getElementById('scale').value;
-				js_pcb.view_pcb(event.data, scale, 2);
+				js_pcb.view_pcb(event.data[0], scale, 2, event.data[1]);
 				//i++;
 			}
 		}, false);

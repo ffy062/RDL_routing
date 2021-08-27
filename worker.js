@@ -55,7 +55,7 @@ function pcb_thread(paramater_array)
 
 	//run number of samples of solution and pick best one
 	let best_pcb = current_pcb.output_pcb();
-	postMessage(best_pcb);
+	postMessage([best_pcb, 1]);
 	let best_cost = 1000000000;
 	for (let i = 0; i < arg_s; ++i)
 	{
@@ -71,7 +71,7 @@ function pcb_thread(paramater_array)
 			best_pcb = current_pcb.output_pcb();
 		}
 	}
-	postMessage(best_pcb);
+	postMessage([best_pcb, 1]);
 }
 
 //thread event listner
