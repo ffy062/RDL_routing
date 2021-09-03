@@ -1,8 +1,10 @@
 "use strict";
 
+
 var js_pcb = js_pcb || {};
 (function()
 {
+	
 	Array.prototype.shuffle = function()
 	{
 		let i = this.length, j, temp;
@@ -22,6 +24,10 @@ var js_pcb = js_pcb || {};
 	}
 
 	const spacial_hash_res = 0.75;
+
+	function gonext() {
+		console.log('gogo');
+	}
 
 	//aabb of terminals
 	function aabb_terminals(terms, quantization)
@@ -115,7 +121,7 @@ var js_pcb = js_pcb || {};
 		}
 
 		//attempt to route board within time
-		route(timeout)
+		async route(timeout)
 		{
 			this.remove_netlist();
 			this.unmark_distances();
@@ -183,6 +189,7 @@ var js_pcb = js_pcb || {};
 	//			std::chrono::duration<float> elapsed = end_time - start_time;
 	//			if (elapsed.count() >= timeout) return false;
 				if (this.m_verbosity >= 1) postMessage([this.output_pcb(), 0]);
+			
 			}
 			return true;
 		}
