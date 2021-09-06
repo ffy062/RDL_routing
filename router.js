@@ -120,6 +120,29 @@ var js_pcb = js_pcb || {};
 			for (let net of this.m_netlist) net.remove();
 		}
 
+		// ffy-comment: net ordering function
+		net_ordering() {
+			this.congestion_arr = new Uint32Array(this.m_width * this.m_depth);
+			for(let net of this.m_netlist) {
+				
+			}
+			this.m_netlist.sort(function(n1, n2) {
+				if(n1.y_diff === n2.y_diff) {
+					return n2.x_diff - n1.x_diff;
+				}
+				else {
+					return n1.y_diff - n2.y_diff;
+				}
+			});
+		}
+		net_ording_ori() {
+			this.m_netlist.sort(function(n1, n2)
+			{
+				if (n1.m_area === n2.m_area) return n1.m_radius - n2.m_radius;
+				return n1.m_area - n2.m_area;
+			});
+		}
+
 		//attempt to route board within time
 		async route(timeout)
 		{
@@ -128,12 +151,9 @@ var js_pcb = js_pcb || {};
 			this.reset_areas();
 			this.shuffle_netlist();
 
-
-			this.m_netlist.sort(function(n1, n2)
-			{
-				if (n1.m_area === n2.m_area) return n1.m_radius - n2.m_radius;
-				return n1.m_area - n2.m_area;
-			});
+			// ffy-comment: order netlist
+			this.net_ordering();
+			//this.net_ording_ori();
 			// ffy comment: Set to store nets that cannot complete routing.
 			let hoisted_nets = new Set();
 			let index = 0;
@@ -148,11 +168,8 @@ var js_pcb = js_pcb || {};
 					{
 						this.reset_areas();
 						this.shuffle_netlist();
-						this.m_netlist.sort(function(n1, n2)
-						{
-							if (n1.m_area === n2.m_area) return n1.m_radius - n2.m_radius;
-							return n1.m_area - n2.m_area;
-						});
+						this.net_ordering();
+						//this.net_ording_ori();
 						hoisted_nets.clear();
 					}
 					else
@@ -447,11 +464,20 @@ var js_pcb = js_pcb || {};
 			this.m_gap = gap * pcb.m_resolution;
 			this.m_terminals = terms;
 			this.m_paths = [];
+			// ffy-comment: two pin of the net
+			this.p1 = [0, 0]; 
+			this.p2 = [0, 0];
 			scale_terminals(this.m_terminals, pcb.m_resolution);
 			[this.m_area, this.m_bbox] = aabb_terminals(this.m_terminals, pcb.m_quantization);
 			this.remove();
 			for (let term of this.m_terminals)
 			{
+				if(this.p1[0] == 0 && this.p1[1] == 0) {
+					this.p1 = [Math.trunc(term[2][0] + 0.5), Math.trunc(term[2][1] + 0.5)];
+				}
+				else {
+					this.p2 = [Math.trunc(term[2][0] + 0.5), Math.trunc(term[2][1] + 0.5)];
+				}
 				for (let z = 0; z < pcb.m_depth; ++z)
 				{
 					let p = [Math.trunc(term[2][0] + 0.5), Math.trunc(term[2][1] + 0.5), z];
@@ -459,6 +485,8 @@ var js_pcb = js_pcb || {};
 					pcb.m_deform.set(p.toString(), sp);
 				}
 			}
+			this.x_diff = Math.abs(this.p1[0] - this.p2[0]);
+			this.y_diff = Math.abs(this.p1[1] - this.p2[1]);
 		}
 
 		//randomize order of terminals
