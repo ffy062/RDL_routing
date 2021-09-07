@@ -32,16 +32,17 @@ var js_pcb = js_pcb || {};
 	//aabb of terminals
 	function aabb_terminals(terms, quantization)
 	{
-		let minx = (Math.trunc(terms[0][2][0]) / quantization) * quantization;
-		let miny = (Math.trunc(terms[0][2][1]) / quantization) * quantization;
-		let maxx = ((Math.trunc(terms[0][2][0]) + (quantization - 1)) / quantization) * quantization;
-		let maxy = ((Math.trunc(terms[0][2][1]) + (quantization - 1)) / quantization) * quantization;
+		// ffy-comment: original : Math.trunc(terms[x][y][z]/q)
+		let minx = (Math.trunc(terms[0][2][0] + 0.5) / quantization) * quantization;
+		let miny = (Math.trunc(terms[0][2][1] + 0.5) / quantization) * quantization;
+		let maxx = ((Math.trunc(terms[0][2][0] + 0.5) + (quantization - 1)) / quantization) * quantization;
+		let maxy = ((Math.trunc(terms[0][2][1] + 0.5) + (quantization - 1)) / quantization) * quantization;
 		for (let i = 1; i < terms.length; ++i)
 		{
-			let tminx = (Math.trunc(terms[i][2][0]) / quantization) * quantization;
-			let tminy = (Math.trunc(terms[i][2][1]) / quantization) * quantization;
-			let tmaxx = ((Math.trunc(terms[i][2][0]) + (quantization - 1)) / quantization) * quantization;
-			let tmaxy = ((Math.trunc(terms[i][2][1]) + (quantization - 1)) / quantization) * quantization;
+			let tminx = (Math.trunc(terms[i][2][0] + 0.5) / quantization) * quantization;
+			let tminy = (Math.trunc(terms[i][2][1] + 0.5) / quantization) * quantization;
+			let tmaxx = ((Math.trunc(terms[i][2][0] + 0.5) + (quantization - 1)) / quantization) * quantization;
+			let tmaxy = ((Math.trunc(terms[i][2][1] + 0.5) + (quantization - 1)) / quantization) * quantization;
 			minx = Math.min(tminx, minx);
 			miny = Math.min(tminy, miny);
 			maxx = Math.max(tmaxx, maxx);
@@ -104,6 +105,9 @@ var js_pcb = js_pcb || {};
 			this.m_netlist = [];
 			this.m_nodes = new Uint32Array(this.m_stride * this.m_depth);
 			this.m_via_vectors = [[[0, 0, -1], [0, 0, 1]], [[0, 0, -1], [0, 0, 1]]];
+
+			// ffy-comment: for net ordering
+			this.congestion_arr = new Uint32Array(this.m_width * this.m_height);
 		}
 
 		//add net
@@ -120,35 +124,13 @@ var js_pcb = js_pcb || {};
 			for (let net of this.m_netlist) net.remove();
 		}
 
-		// ffy-comment: net ordering function
-		net_ordering() {
-			this.congestion_arr = new Uint32Array(this.m_width * this.m_depth);
-			for(let net of this.m_netlist) {
-				
-			}
-			this.m_netlist.sort(function(n1, n2) {
-				if(n1.y_diff === n2.y_diff) {
-					return n2.x_diff - n1.x_diff;
-				}
-				else {
-					return n1.y_diff - n2.y_diff;
-				}
-			});
-		}
-		net_ording_ori() {
-			this.m_netlist.sort(function(n1, n2)
-			{
-				if (n1.m_area === n2.m_area) return n1.m_radius - n2.m_radius;
-				return n1.m_area - n2.m_area;
-			});
-		}
 
 		//attempt to route board within time
 		async route(timeout)
 		{
 			this.remove_netlist();
 			this.unmark_distances();
-			this.reset_areas();
+			this.reset_congest();
 			this.shuffle_netlist();
 
 			// ffy-comment: order netlist
@@ -166,7 +148,9 @@ var js_pcb = js_pcb || {};
 				{
 					if (index === 0)
 					{
-						this.reset_areas();
+						this.reset_congest();
+						this.reset_xdiff();
+						this.reset_ydiff();
 						this.shuffle_netlist();
 						this.net_ordering();
 						//this.net_ording_ori();
@@ -174,19 +158,31 @@ var js_pcb = js_pcb || {};
 					}
 					else
 					{
-						// ffy comment: Move netlist[index] to the top of all nets with same m_area
+						// ffy comment: Move netlist[index] to the front of all nets with same congest
 						let pos = this.hoist_net(index);
-						// ffy comment: If netlist[index].m_area is unique
-						//or the second time cannot route this net without changing m_area
+						// ffy comment: If netlist[index].congest is unique
+						//or the second time cannot route this net without changing congest
 						if ((pos === index) || (hoisted_nets.has(this.m_netlist[pos])))
 						{
-							// ffy comment: If pos is 0, m_area cannot be further decrease
+							// ffy comment: If pos is 0, the net has the highest priority
 							if (pos !== 0)
 							{
-								// ffy comment: Decrease m_area of the net for higher routing priority
-								this.m_netlist[pos].m_area = this.m_netlist[pos-1].m_area;
-								// ffy comment: Move netlist[pos] to the top of all nets with same m_area 
+								// ffy comment: Increase congest of the net for higher routing priority
+								this.m_netlist[pos].congest += 1;
+								// ffy comment: Move netlist[pos] to the top of all nets with same m_area
+								let old_pos = pos;
 								pos = this.hoist_net(pos);
+								if(old_pos === pos) {
+									this.reset_congest_net(this.m_netlist[pos]);
+									this.m_netlist[pos].x_diff += 1;
+									old_pos = pos;
+									pos = this.hoist_net(pos);
+									if(old_pos === pos) {
+										this.reset_xdiff_net(this.m_netlist[pos]);
+										this.m_netlist[pos].y_diff -= 1;
+										pos = this.hoist_net(pos);
+									}
+								}
 							}
 							// ffy comment: Since m_area changed, remove from the Set
 							hoisted_nets.delete(this.m_netlist[pos]); 
@@ -403,13 +399,75 @@ var js_pcb = js_pcb || {};
 			this.m_nodes.fill(0);
 		}
 
-		//reset areas
-		reset_areas()
-		{
-			for (let net of this.m_netlist)
-			{
-				[net.m_area, net.m_bbox] = aabb_terminals(net.m_terminals, this.m_quantization);
+		// ffy-comment: net ordering function
+		net_ordering() {
+			
+			for(let net of this.m_netlist) {
+				for(let i = net.m_bbox[1]; i <= net.m_bbox[3]; ++i) {
+					for(let j = net.m_bbox[0]; j <= net.m_bbox[2]; ++j) {
+						this.congestion_arr[i * this.m_width + j] += 1;
+					}
+				}
 			}
+			this.reset_congest();
+			this.m_netlist.sort(function(n1, n2) {
+				if(n1.y_diff === n2.y_diff) {
+					if(n1.x_diff === n2.x_diff) {
+						return n2.congest - n1.congest;
+					}
+					else {
+						return n2.x_diff - n1.x_diff;
+					}	
+				}
+				else {
+					return n1.y_diff - n2.y_diff;
+				}
+			});
+		}
+		
+		net_ording_ori() {
+			this.m_netlist.sort(function(n1, n2)
+			{
+				if (n1.m_area === n2.m_area) return n1.m_radius - n2.m_radius;
+				return n1.m_area - n2.m_area;
+			});
+		}
+
+		reset_xdiff() {
+			for(let net of this.m_netlist) {
+				this.reset_xdiff_net(net);
+			}
+		}
+		
+		reset_xdiff_net(net) {
+			net.x_diff = net.m_bbox[2] - net.m_bbox[0];
+		}
+
+		reset_ydiff() {
+			for(let net of this.m_netlist) {
+				this.reset_ydiff_net(net);
+			}
+		}
+	
+		reset_ydiff_net(net) {
+			net.x_diff = net.m_bbox[3] - net.m_bbox[1];
+		}
+
+		//reset congestion array
+		reset_congest() {
+			for(let net of this.m_netlist) {
+				this.reset_congest_net(net);
+			}
+		}
+		reset_congest_net(net) {
+			for(let i = net.m_bbox[1]; i <= net.m_bbox[3]; ++i) {
+				for(let j = net.m_bbox[0]; j <= net.m_bbox[2]; ++j) {
+					net.congest += this.congestion_arr[i * this.m_width + j] - 1;
+				}
+			}
+			net.congest /= (net.m_bbox[3] - net.m_bbox[1] + 1) * (net.m_bbox[2] - net.m_bbox[0] + 1);
+			net.congest = Math.round(net.congest);
+			//console.log("congest:" , net.congest);
 		}
 
 		//shuffle order of netlist
@@ -419,16 +477,27 @@ var js_pcb = js_pcb || {};
 			for (let net of this.m_netlist) net.shuffle_topology();
 		}
 
-		//move net to top of area group
+		//move net to the front of same congest
 		hoist_net(n)
 		{
 			let i = 0;
 			if (n != 0)
 			{
-				for (i = n; i >= 0; --i) if (this.m_netlist[i].m_area < this.m_netlist[n].m_area) break;
+				for (i = n; i >= 0; --i) {
+					if(this.m_netlist[i].y_diff === this.m_netlist[n].y_diff) 
+						break;
+				}
+				for(; i >= 0; --i) {
+					if(this.m_netlist[i].x_diff === this.m_netlist[n].x_diff) 
+						break;
+				}
+				for(; i >= 0; --i) {
+					if(this.m_netlist[i].congest > this.m_netlist[n].congest) {
+						break;
+					}
+				}
 				i++;
-				if (n != i)
-				{
+				if (n != i) {
 					this.m_netlist.move(n, i);
 				}
 			}
@@ -464,29 +533,23 @@ var js_pcb = js_pcb || {};
 			this.m_gap = gap * pcb.m_resolution;
 			this.m_terminals = terms;
 			this.m_paths = [];
-			// ffy-comment: two pin of the net
-			this.p1 = [0, 0]; 
-			this.p2 = [0, 0];
 			scale_terminals(this.m_terminals, pcb.m_resolution);
+			// ffy-comment: m_bbox[4]: [minx, miny, maxx, maxy]			
 			[this.m_area, this.m_bbox] = aabb_terminals(this.m_terminals, pcb.m_quantization);
 			this.remove();
 			for (let term of this.m_terminals)
 			{
-				if(this.p1[0] == 0 && this.p1[1] == 0) {
-					this.p1 = [Math.trunc(term[2][0] + 0.5), Math.trunc(term[2][1] + 0.5)];
-				}
-				else {
-					this.p2 = [Math.trunc(term[2][0] + 0.5), Math.trunc(term[2][1] + 0.5)];
-				}
 				for (let z = 0; z < pcb.m_depth; ++z)
 				{
-					let p = [Math.trunc(term[2][0] + 0.5), Math.trunc(term[2][1] + 0.5), z];
+					let p = [Math.trunc(term[2][0] + 0.5),Math.trunc(term[2][1] + 0.5), z];
 					let sp = [term[2][0], term[2][1], z];
 					pcb.m_deform.set(p.toString(), sp);
 				}
 			}
-			this.x_diff = Math.abs(this.p1[0] - this.p2[0]);
-			this.y_diff = Math.abs(this.p1[1] - this.p2[1]);
+			// ffy-comment: for net ordering
+			this.x_diff = Math.abs(this.m_bbox[2] - this.m_bbox[0]);
+			this.y_diff = Math.abs(this.m_bbox[3] - this.m_bbox[1]);
+			this.congest = 0;
 		}
 
 		//randomize order of terminals
