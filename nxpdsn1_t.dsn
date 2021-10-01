@@ -1,6 +1,6 @@
 (pcb "madeByPython"
-    (resolution mm 10)
-    (unit mm)
+    (resolution mil 10)
+    (unit mil)
     (structure
     (layer F.Cu
       (type signal)
@@ -13,6 +13,9 @@
       (property
         (index 1)
       )
+    )
+    (boundary
+      (rect pcb 60000 62000 50000 -10000)
     )
     (rule
       (width 154)
@@ -723,7 +726,7 @@
         
     )
     (padstack Type1_circle
-      (shape (circle B.Cu 600))
+      (shape (circle B.Cu 1200))
       (attach off)
     )
     )

@@ -131,7 +131,7 @@ var js_pcb = js_pcb || {};
 							.attr("cx", path[node][0])
 							.attr("cy", path[node][1])
 							.attr("r", via_radius)
-							.attr("fill", "gray");
+							.attr("fill", "blue");
 						
 						let pos_x = path[node][0];
 						let pos_y = path[node][1];

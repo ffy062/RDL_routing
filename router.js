@@ -134,13 +134,14 @@ var js_pcb = js_pcb || {};
 			this.shuffle_netlist();
 
 			// ffy-comment: order netlist
-			this.net_ordering();
-			//this.net_ording_ori();
+			//this.net_ordering();
+			//this.show_netlist();
+			this.net_ording_ori();
 			// ffy comment: Set to store nets that cannot complete routing.
 			let hoisted_nets = new Set();
 			let index = 0;
 	//		let start_time = std::chrono::high_resolution_clock::now();
-			// ffy comment: net with small area will first.
+			// ffy comment: net with small area will route first.
 			while (index < this.m_netlist.length)
 			{
 				if (this.m_netlist[index].route()) index++;
@@ -152,14 +153,14 @@ var js_pcb = js_pcb || {};
 						this.reset_xdiff();
 						this.reset_ydiff();
 						this.shuffle_netlist();
-						this.net_ordering();
-						//this.net_ording_ori();
+						//this.net_ordering();
+						this.net_ording_ori();
 						hoisted_nets.clear();
 					}
 					else
 					{
 						// ffy comment: Move netlist[index] to the front of all nets with same congest
-						let pos = this.hoist_net(index);
+						let pos = this.hoist_net_ori(index);
 						// ffy comment: If netlist[index].congest is unique
 						//or the second time cannot route this net without changing congest
 						if ((pos === index) || (hoisted_nets.has(this.m_netlist[pos])))
@@ -167,7 +168,12 @@ var js_pcb = js_pcb || {};
 							// ffy comment: If pos is 0, the net has the highest priority
 							if (pos !== 0)
 							{
-								// ffy comment: Increase congest of the net for higher routing priority
+								// ffy comment: Decrease m_area of the net for higher routing priority
+								this.m_netlist[pos].m_area = this.m_netlist[pos-1].m_area;
+								// ffy comment: Move netlist[pos] to the top of all nets with same m_area 
+								pos = this.hoist_net_ori(pos);
+
+								/*// ffy comment: Increase congest of the net for higher routing priority
 								this.m_netlist[pos].congest += 1;
 								// ffy comment: Move netlist[pos] to the top of all nets with same m_area
 								let old_pos = pos;
@@ -182,7 +188,7 @@ var js_pcb = js_pcb || {};
 										this.m_netlist[pos].y_diff -= 1;
 										pos = this.hoist_net(pos);
 									}
-								}
+								}*/
 							}
 							// ffy comment: Since m_area changed, remove from the Set
 							hoisted_nets.delete(this.m_netlist[pos]); 
@@ -477,6 +483,21 @@ var js_pcb = js_pcb || {};
 			for (let net of this.m_netlist) net.shuffle_topology();
 		}
 
+		hoist_net_ori(n)
+		{
+			let i = 0;
+			if (n != 0)
+			{
+				for (i = n; i >= 0; --i) if (this.m_netlist[i].m_area < this.m_netlist[n].m_area) break;
+				i++;
+				if (n != i)
+				{
+					this.m_netlist.move(n, i);
+				}
+			}
+			return i;
+		}
+
 		//move net to the front of same congest
 		hoist_net(n)
 		{
@@ -502,6 +523,13 @@ var js_pcb = js_pcb || {};
 				}
 			}
 			return i;
+		}
+
+		// ffy-comment: for debug
+		show_netlist() {
+			for(let net of this.m_netlist) {
+				//console.log(net.y_diff, " ", net.x_diff, " ", net.congest);
+			}
 		}
 	}
 
