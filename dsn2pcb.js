@@ -237,7 +237,7 @@ var js_pcb = js_pcb || {};
 						maxx = Math.max(x2, maxx);
 						miny = Math.min(y2, miny);
 						maxy = Math.max(y2, maxy);
-						console.log(minx, miny, maxx, maxy);
+						//console.log(minx, miny, maxx, maxy);
 					}
 				}
 			}
@@ -291,6 +291,7 @@ var js_pcb = js_pcb || {};
 						if (padstack_node[1][0][0] === "circle")
 						{
 							the_rule[0] = parseFloat(padstack_node[1][0][1][1][0]) / (2 * units);
+							//console.log(padstack_node[1][0][1][1][0],the_rule[0]);
 						}
 						else if (padstack_node[1][0][0] === "path")
 						{
@@ -486,7 +487,7 @@ var js_pcb = js_pcb || {};
 				terminal[2][1] -= (miny - gap);
 			}
 		}
-		console.log(minx, miny, maxx, maxy);
+		//console.log(minx, miny, maxx, maxy);
 		return [[Math.trunc(maxx - minx + (gap * 2) + 0.5),
 			 	Math.trunc(maxy - miny + (gap * 2) + 0.5),
 				num_layers],

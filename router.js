@@ -25,9 +25,6 @@ var js_pcb = js_pcb || {};
 
 	const spacial_hash_res = 0.75;
 
-	function gonext() {
-		console.log('gogo');
-	}
 
 	//aabb of terminals
 	function aabb_terminals(terms, quantization)
@@ -130,7 +127,7 @@ var js_pcb = js_pcb || {};
 		{
 			this.remove_netlist();
 			this.unmark_distances();
-			this.reset_congest();
+			//this.reset_congest();
 			this.shuffle_netlist();
 
 			// ffy-comment: order netlist
@@ -619,10 +616,12 @@ var js_pcb = js_pcb || {};
 				let r, g, x, y, shape;
 				[r, g, [x, y, ,], shape] = node;
 				if (!shape.length)
-					this.m_pcb.m_layers.sub_line([x, y, 0], [x, y, this.m_pcb.m_depth - 1], r, g);
+					//this.m_pcb.m_layers.sub_line([x, y, 0], [x, y, this.m_pcb.m_depth - 1], r, g);
+					this.m_pcb.m_layers.sub_line([x, y, 0], [x, y, 0], r, g);
 				else
 				{
-					for (let z = 0; z < this.m_pcb.m_depth; ++z)
+					// ffy-comment: change z < this.m_pcg.m_depth to z < 1
+					for (let z = 0; z < 1; ++z)
 					{
 						let p1 = [x + shape[0][0], y + shape[0][1], z];
 						for (let i = 1; i < shape.length; ++i)
@@ -757,7 +756,8 @@ var js_pcb = js_pcb || {};
 			for (let index = 1; index < this.m_terminals.length; ++index)
 			{
 				let ends = [];
-				for (let z = 0; z < this.m_pcb.m_depth; ++z)
+				// ffy comment: change z < this.m_pcb.m_depth to 1
+				for (let z = 0; z < 1; ++z)
 				{
 					let x = Math.trunc(this.m_terminals[index][2][0]+0.5);
 					let y = Math.trunc(this.m_terminals[index][2][1]+0.5);
@@ -769,7 +769,8 @@ var js_pcb = js_pcb || {};
 					continue; //ffy comment: This end point has been visited already
 				}
 				// ffy comment: This end point has not been visited yet
-				for (let z = 0; z < this.m_pcb.m_depth; ++z)
+				// ffy comment: change z < this.m_pcb.m_depth to z < 1
+				for (let z = 0; z < 1; ++z)
 				{
 					let x = Math.trunc(this.m_terminals[index-1][2][0]+0.5);
 					let y = Math.trunc(this.m_terminals[index-1][2][1]+0.5);

@@ -17,6 +17,12 @@
     (boundary
       (rect pcb 60000 62000 50000 -10000)
     )
+    (via "Via[0-1]_889:635_um" "Via[0-1]_889:0_um")
+    (rule
+      (width 500)
+      (clearance 1000)
+      (clearance 1000 (type default_smd))
+    )
     (rule
       (width 154)
       (clearance 5.1)
@@ -729,6 +735,11 @@
       (shape (circle B.Cu 1200))
       (attach off)
     )
+    (padstack "Via[0-1]_889:635_um"
+      (shape (circle F.Cu 1250))
+      (shape (circle B.Cu 1250))
+      (attach off)
+    )
     )
     (network
     (net U1.AB5
@@ -941,7 +952,7 @@
     
     (class kicad_default U1.AB5 U1.AC4 U1.AD5 U1.D5 U1.E4 U1.F5 U1.J4 U1.J6 U1.K4 U1.K6 U1.N4 U1.N5 U1.R4 U1.R5 U1.V4 U1.V6 U1.W4 U1.W6 U2.AA11 U2.AA2 U2.AA4 U2.AA9 U2.B11 U2.B2 U2.B4 U2.B9 U2.C10 U2.C11 U2.C2 U2.C3 U2.C4 U2.C9 U2.D10 U2.D3 U2.E10 U2.E11 U2.E2 U2.E3 U2.E4 U2.E9 U2.F11 U2.F2 U2.F4 U2.F9 U2.J4 U2.J8 U2.J9 U2.P4 U2.P8 U2.P9 U2.T11 U2.U11 U2.U2 U2.U4 U2.U9 U2.V10 U2.V11 U2.V2 U2.V3 U2.V4 U2.V9 U2.W10 U2.W3 U2.Y10 U2.Y11 U2.Y2 U2.Y3 U2.Y4 U2.Y9
       (circuit
-        (use_via Type1_circle)
+        (use_via Via[0-1]_889:635_um)
       )
       (rule
         (width 154)
