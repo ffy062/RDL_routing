@@ -141,6 +141,9 @@ var js_pcb = js_pcb || {};
 			// ffy comment: net with small area will route first.
 			while (index < this.m_netlist.length)
 			{
+				if(index == 1) {
+					return true;
+				} 
 				if (this.m_netlist[index].route()) index++;
 				else
 				{
@@ -250,6 +253,7 @@ var js_pcb = js_pcb || {};
 		set_node(n, value)
 		{
 			this.m_nodes[(this.m_stride*n[2])+(n[1]*this.m_width)+n[0]] = value;
+			console.log(n[0], n[1], n[2], 'value = ', value);
 		}
 
 		//get grid node value
@@ -711,6 +715,7 @@ var js_pcb = js_pcb || {};
 			for (;;)
 			{
 				path.push(path_node);
+				console.log(path_node, this.m_pcb.get_node(path_node));
 				let nearer_nodes = [];
 				let m_n = [];
 				for (let node of this.m_pcb.all_not_shorting(
