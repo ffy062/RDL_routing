@@ -103,8 +103,6 @@ var js_pcb = js_pcb || {};
 			this.m_nodes = new Uint32Array(this.m_stride * this.m_depth);
 			this.m_via_vectors = [[[0, 0, -1], [0, 0, 1]], [[0, 0, -1], [0, 0, 1]]];
 
-			// ffy-comment: for net ordering
-			this.congestion_arr = new Uint32Array(this.m_width * this.m_height);
 		}
 
 		//add net
@@ -127,11 +125,9 @@ var js_pcb = js_pcb || {};
 		{
 			this.remove_netlist();
 			this.unmark_distances();
-			//this.reset_congest();
 			this.shuffle_netlist();
 
 			// ffy-comment: order netlist
-			//this.net_ordering();
 			//this.show_netlist();
 			this.net_ording_ori();
 			// ffy comment: Set to store nets that cannot complete routing.
@@ -141,17 +137,11 @@ var js_pcb = js_pcb || {};
 			// ffy comment: net with small area will route first.
 			while (index < this.m_netlist.length)
 			{
-				if(index == 1) {
-					return true;
-				} 
 				if (this.m_netlist[index].route()) index++;
 				else
 				{
 					if (index === 0)
 					{
-						this.reset_congest();
-						this.reset_xdiff();
-						this.reset_ydiff();
 						this.shuffle_netlist();
 						//this.net_ordering();
 						this.net_ording_ori();
@@ -172,23 +162,6 @@ var js_pcb = js_pcb || {};
 								this.m_netlist[pos].m_area = this.m_netlist[pos-1].m_area;
 								// ffy comment: Move netlist[pos] to the top of all nets with same m_area 
 								pos = this.hoist_net_ori(pos);
-
-								/*// ffy comment: Increase congest of the net for higher routing priority
-								this.m_netlist[pos].congest += 1;
-								// ffy comment: Move netlist[pos] to the top of all nets with same m_area
-								let old_pos = pos;
-								pos = this.hoist_net(pos);
-								if(old_pos === pos) {
-									this.reset_congest_net(this.m_netlist[pos]);
-									this.m_netlist[pos].x_diff += 1;
-									old_pos = pos;
-									pos = this.hoist_net(pos);
-									if(old_pos === pos) {
-										this.reset_xdiff_net(this.m_netlist[pos]);
-										this.m_netlist[pos].y_diff -= 1;
-										pos = this.hoist_net(pos);
-									}
-								}*/
 							}
 							// ffy comment: Since m_area changed, remove from the Set
 							hoisted_nets.delete(this.m_netlist[pos]); 
@@ -253,7 +226,7 @@ var js_pcb = js_pcb || {};
 		set_node(n, value)
 		{
 			this.m_nodes[(this.m_stride*n[2])+(n[1]*this.m_width)+n[0]] = value;
-			console.log(n[0], n[1], n[2], 'value = ', value);
+			//console.log(n[0], n[1], n[2], 'value = ', value);
 		}
 
 		//get grid node value
@@ -409,27 +382,6 @@ var js_pcb = js_pcb || {};
 		// ffy-comment: net ordering function
 		net_ordering() {
 			
-			for(let net of this.m_netlist) {
-				for(let i = net.m_bbox[1]; i <= net.m_bbox[3]; ++i) {
-					for(let j = net.m_bbox[0]; j <= net.m_bbox[2]; ++j) {
-						this.congestion_arr[i * this.m_width + j] += 1;
-					}
-				}
-			}
-			this.reset_congest();
-			this.m_netlist.sort(function(n1, n2) {
-				if(n1.y_diff === n2.y_diff) {
-					if(n1.x_diff === n2.x_diff) {
-						return n2.congest - n1.congest;
-					}
-					else {
-						return n2.x_diff - n1.x_diff;
-					}	
-				}
-				else {
-					return n1.y_diff - n2.y_diff;
-				}
-			});
 		}
 		
 		net_ording_ori() {
@@ -440,42 +392,6 @@ var js_pcb = js_pcb || {};
 			});
 		}
 
-		reset_xdiff() {
-			for(let net of this.m_netlist) {
-				this.reset_xdiff_net(net);
-			}
-		}
-		
-		reset_xdiff_net(net) {
-			net.x_diff = net.m_bbox[2] - net.m_bbox[0];
-		}
-
-		reset_ydiff() {
-			for(let net of this.m_netlist) {
-				this.reset_ydiff_net(net);
-			}
-		}
-	
-		reset_ydiff_net(net) {
-			net.x_diff = net.m_bbox[3] - net.m_bbox[1];
-		}
-
-		//reset congestion array
-		reset_congest() {
-			for(let net of this.m_netlist) {
-				this.reset_congest_net(net);
-			}
-		}
-		reset_congest_net(net) {
-			for(let i = net.m_bbox[1]; i <= net.m_bbox[3]; ++i) {
-				for(let j = net.m_bbox[0]; j <= net.m_bbox[2]; ++j) {
-					net.congest += this.congestion_arr[i * this.m_width + j] - 1;
-				}
-			}
-			net.congest /= (net.m_bbox[3] - net.m_bbox[1] + 1) * (net.m_bbox[2] - net.m_bbox[0] + 1);
-			net.congest = Math.round(net.congest);
-			//console.log("congest:" , net.congest);
-		}
 
 		//shuffle order of netlist
 		shuffle_netlist()
@@ -493,33 +409,6 @@ var js_pcb = js_pcb || {};
 				i++;
 				if (n != i)
 				{
-					this.m_netlist.move(n, i);
-				}
-			}
-			return i;
-		}
-
-		//move net to the front of same congest
-		hoist_net(n)
-		{
-			let i = 0;
-			if (n != 0)
-			{
-				for (i = n; i >= 0; --i) {
-					if(this.m_netlist[i].y_diff === this.m_netlist[n].y_diff) 
-						break;
-				}
-				for(; i >= 0; --i) {
-					if(this.m_netlist[i].x_diff === this.m_netlist[n].x_diff) 
-						break;
-				}
-				for(; i >= 0; --i) {
-					if(this.m_netlist[i].congest > this.m_netlist[n].congest) {
-						break;
-					}
-				}
-				i++;
-				if (n != i) {
 					this.m_netlist.move(n, i);
 				}
 			}
@@ -715,7 +604,7 @@ var js_pcb = js_pcb || {};
 			for (;;)
 			{
 				path.push(path_node);
-				console.log(path_node, this.m_pcb.get_node(path_node));
+				//console.log(path_node, this.m_pcb.get_node(path_node));
 				let nearer_nodes = [];
 				let m_n = [];
 				for (let node of this.m_pcb.all_not_shorting(
