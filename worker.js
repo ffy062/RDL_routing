@@ -1,4 +1,4 @@
-importScripts('mymath.js', 'layer.js', 'router.js');
+importScripts('mymath.js', 'layer.js', 'router.js', 'debug.js');
 
 function pcb_thread(paramater_array)
 {

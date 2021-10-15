@@ -677,6 +677,7 @@ var js_pcb = js_pcb || {};
 				for (let node of ends) sorted_ends.push([this.m_pcb.get_node(node), node]);
 				sorted_ends.sort(function(s1, s2) { return s1[0] - s2[0]; });
 				let result = this.backtrack_path(visited, sorted_ends[0][1], this.m_radius, this.m_via, this.m_gap);
+				js_pcb.view_distance();
 				this.m_pcb.unmark_distances();
 				if (!result[1])
 				{
