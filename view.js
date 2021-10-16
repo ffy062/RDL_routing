@@ -1,6 +1,7 @@
 "use strict";
 
 var js_pcb = js_pcb || {};
+var js_pcb_d = js_pcb_d || {};
 (function()
 {
 	// ffy comment: show_result: 1 for show, 0 for not show (in broswer console)
@@ -168,6 +169,17 @@ var js_pcb = js_pcb || {};
 			console.log("close via pair = " + close_pair);
 		}
 	}
-
+	
 	js_pcb.view_pcb = view_pcb;
+	
+})();
+
+(function () {
+	function ttt() {
+		let path_func = d3.line()
+			.x(function(d) { return d[0]; })
+			.y(function(d) { return d[1]; });
+			console.log('hi');
+	}
+	js_pcb_d.ttt = ttt;
 })();
