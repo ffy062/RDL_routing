@@ -226,7 +226,7 @@ var js_pcb = js_pcb || {};
 		set_node(n, value)
 		{
 			this.m_nodes[(this.m_stride*n[2])+(n[1]*this.m_width)+n[0]] = value;
-			//console.log(n[0], n[1], n[2], 'value = ', value);
+			console.log(n[0], n[1], n[2], value);
 		}
 
 		//get grid node value
@@ -677,7 +677,6 @@ var js_pcb = js_pcb || {};
 				for (let node of ends) sorted_ends.push([this.m_pcb.get_node(node), node]);
 				sorted_ends.sort(function(s1, s2) { return s1[0] - s2[0]; });
 				let result = this.backtrack_path(visited, sorted_ends[0][1], this.m_radius, this.m_via, this.m_gap);
-				//js_pcb_d.ttt();
 				this.m_pcb.unmark_distances();
 				if (!result[1])
 				{
@@ -692,7 +691,6 @@ var js_pcb = js_pcb || {};
 			this.add_terminal_collision_lines();
 			return true;
 		}
-
 		//output net, terminals and paths, for viewer app
 		output_net()
 		{

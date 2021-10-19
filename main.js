@@ -29,7 +29,7 @@ function handleOnGo(evt)
 			{
 				//view the pcb output
 				let scale = +document.getElementById('scale').value;
-				//js_pcb.view_pcb(event.data[0], scale, 2, event.data[1]);
+				js_pcb.view_pcb(event.data[0], scale, 2, event.data[1]);
 				//i++;
 			}
 		}, false);
