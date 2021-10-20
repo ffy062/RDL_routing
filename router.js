@@ -226,7 +226,7 @@ var js_pcb = js_pcb || {};
 		set_node(n, value)
 		{
 			this.m_nodes[(this.m_stride*n[2])+(n[1]*this.m_width)+n[0]] = value;
-			console.log(n[0], n[1], n[2], value);
+			//console.log(n[0], n[1], n[2], value);
 		}
 
 		//get grid node value
@@ -236,7 +236,7 @@ var js_pcb = js_pcb || {};
 		}
 
 		//generate all grid points surrounding node, that are not value 0
-		all_marked(vec, n)
+		all_marked(vec, n, s)
 		{
 			let w = this.m_width;
 			let h = this.m_height;
@@ -245,7 +245,7 @@ var js_pcb = js_pcb || {};
 			let sort_nodes = [];
 			let x, y, z;
 			[x, y, z] = n;
-			for (let v of vec[z%2])
+			for (let v of vec[(z + s) % 2])
 			{
 				let nx, ny, nz;
 				[nx, ny, nz] = v;
@@ -272,8 +272,8 @@ var js_pcb = js_pcb || {};
 			let nodes = [];
 			let x, y, z;
 			[x, y, z] = n;
-			for (let v of vec[z%2])
-			{
+			for(let i = 0; i < 1; ++i) {
+			for (let v of vec[(z + i) % 2]) {
 				let nx, ny, nz;
 				[nx, ny, nz] = v;
 				nx += x, ny += y, nz += z;
@@ -286,20 +286,23 @@ var js_pcb = js_pcb || {};
 					if (this.get_node(n) === 0) nodes.push(n);
 				}
 			}
+			}
 			return nodes;
 		}
 
 		//generate all grid points surrounding node sorted
-		all_nearer_sorted(vec, n, dfunc)
+		// ffy comment: add shift to generate diiferent layer routing vector
+		all_nearer_sorted(vec, n, dfunc, shift)
 		{
 			let gsp = this.grid_to_space_point;
 			let gp = gsp.call(this, n);
 			let distance = this.get_node(n);
 			// ffy comment: nm : [0] mark distance calculate in mark_distance(), [1] node info
-			let marked_nodes = this.all_marked(vec, n).filter((mn) =>
+			let marked_nodes = this.all_marked(vec, n, shift).filter((mn) =>
 			{
 				// ffy comment: Since we are finding path from end to start, the distance we choose must 
 				// be smaller then the current distance.
+				//console.log('seek', mn[1], mn[0]);
 				if ((distance - mn[0]) <= 0) return false;
 				// ffy comment: use the selected distance function to calculate distance between nearby points.
 				mn[0] = dfunc(gsp.call(this, mn[1]), gp);
@@ -413,13 +416,6 @@ var js_pcb = js_pcb || {};
 				}
 			}
 			return i;
-		}
-
-		// ffy-comment: for debug
-		show_netlist() {
-			for(let net of this.m_netlist) {
-				//console.log(net.y_diff, " ", net.x_diff, " ", net.congest);
-			}
 		}
 	}
 
@@ -604,18 +600,21 @@ var js_pcb = js_pcb || {};
 			for (;;)
 			{
 				path.push(path_node);
-				//console.log(path_node, this.m_pcb.get_node(path_node));
+				//console.log('At', path_node, this.m_pcb.get_node(path_node));
 				let nearer_nodes = [];
 				let m_n = [];
+				// Routing vector of this layer
 				for (let node of this.m_pcb.all_not_shorting(
-					this.m_pcb.all_nearer_sorted(this.m_pcb.m_routing_path_vectors, path_node, this.m_pcb.m_dfunc),
+					this.m_pcb.all_nearer_sorted(this.m_pcb.m_routing_path_vectors, path_node, this.m_pcb.m_dfunc, 0),
 					path_node, radius, gap))
 				{
 					nearer_nodes.push(node);
 					//m_n.push(node);
 				}
+			
+				// Routing vector of via
 				for (let node of this.m_pcb.all_not_shorting(
-					this.m_pcb.all_nearer_sorted(via_vectors, path_node, this.m_pcb.m_dfunc),
+					this.m_pcb.all_nearer_sorted(via_vectors, path_node, this.m_pcb.m_dfunc, 0),
 					path_node, via, gap))
 				{
 					nearer_nodes.push(node);
