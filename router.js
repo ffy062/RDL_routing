@@ -119,6 +119,68 @@ var js_pcb = js_pcb || {};
 			for (let net of this.m_netlist) net.remove();
 		}
 
+		maximum_noncrossing_matching() {
+			this.m_netlist.sort(function(n1, n2) {
+				let n1_y = Math.trunc(n1.m_terminals[0][2][1] + 0.5);
+				let n2_y = Math.trunc(n2.m_terminals[0][2][1] + 0.5);
+				if(n1_y == n2_y) {
+					let n1_x = Math.trunc(n1.m_terminals[0][2][0] + 0.5);
+					let n2_x = Math.trunc(n2.m_terminals[0][2][0] + 0.5);
+					return -(n1_x - n2_x);
+				}
+				else {
+					return n1_y - n2_y;
+				}
+			});
+			let d_arr = []; // [x, y, label]
+			for(let i = 0; i < this.m_netlist.length; ++i) {
+				let term = this.m_netlist[i].m_terminals[1][2];
+				let x = Math.trunc(term[0] + 0.5);
+				let y = Math.trunc(term[1] + 0.5);
+				d_arr.push([x, y, 0]);
+			}
+			d_arr.sort(function(d1, d2) {
+				if(d1[1] == d2[1]) {
+					return (d1[0] - d2[0]);
+				}
+				else {
+					return d1[1] - d2[1];
+				}
+			});
+			for(let i = 0; i < this.m_netlist.length; ++i) {
+				let tx = Math.trunc(this.m_netlist[i].m_terminals[1][2][0] + 0.5);
+				let ty = Math.trunc(this.m_netlist[i].m_terminals[1][2][1] + 0.5);
+				let idx = d_arr.findIndex( i=> i[0] == tx && i[1] == ty);
+				let l_max = 0;
+				for(let j = 0; j < idx; ++j) {
+					l_max = Math.max(l_max, d_arr[j][2]);
+				}
+				this.m_netlist[i].m_label = 1 + l_max;
+				d_arr[idx][2] = Math.max(this.m_netlist[i].m_label, d_arr[idx][2]);
+			}
+			let k_max = 0;
+			for(let i = 0; i < this.m_netlist.length; ++i) {
+				k_max = Math.max(this.m_netlist[i].m_label, k_max);
+			}
+			let idx = this.m_netlist.findIndex(i => i.m_label == k_max);
+			this.m_netlist[idx].m_set = 0;
+			while(k_max > 1) {
+				k_max -= 1;
+				for(let i = 0; i < this.m_netlist.length; ++i) {
+					if(this.m_netlist[i].m_label == k_max) {
+						this.m_netlist[idx].m_set = 0;
+					}
+				}
+			}
+		};
+
+		reset_label() {
+			for(let i = 0; i < this.m_netlist.length; ++i) {
+				this.m_netlist[i].m_label = 0;
+				this.m_netlist[i].m_set = 1;
+			}
+		}
+
 
 		//attempt to route board within time
 		async route(timeout)
@@ -126,10 +188,12 @@ var js_pcb = js_pcb || {};
 			this.remove_netlist();
 			this.unmark_distances();
 			this.shuffle_netlist();
+			this.maximum_noncrossing_matching();
 
 			// ffy-comment: order netlist
 			//this.show_netlist();
-			this.net_ording_ori();
+			//this.net_ordering_ori();
+			this.net_ordering();
 			// ffy comment: Set to store nets that cannot complete routing.
 			let hoisted_nets = new Set();
 			let index = 0;
@@ -143,8 +207,10 @@ var js_pcb = js_pcb || {};
 					if (index === 0)
 					{
 						this.shuffle_netlist();
-						//this.net_ordering();
-						this.net_ording_ori();
+						this.reset_label();
+						this.maximum_noncrossing_matching();
+						this.net_ordering();
+						//this.net_ordering_ori();
 						hoisted_nets.clear();
 					}
 					else
@@ -226,7 +292,7 @@ var js_pcb = js_pcb || {};
 		set_node(n, value)
 		{
 			this.m_nodes[(this.m_stride*n[2])+(n[1]*this.m_width)+n[0]] = value;
-			console.log(n[0], n[1], n[2], value);
+			//console.log(n[0], n[1], n[2], value);
 		}
 
 		//get grid node value
@@ -381,10 +447,19 @@ var js_pcb = js_pcb || {};
 
 		// ffy-comment: net ordering function
 		net_ordering() {
-			
+			this.m_netlist.sort(function(n1, n2)
+			{
+				if(n1.m_set == n2.m_set) {
+					if (n1.m_area === n2.m_area) return n1.m_radius - n2.m_radius;
+					return n1.m_area - n2.m_area;
+				}
+				else { 
+					return n1.m_set - n2.m_set;
+				}
+			});
 		}
 		
-		net_ording_ori() {
+		net_ordering_ori() {
 			this.m_netlist.sort(function(n1, n2)
 			{
 				if (n1.m_area === n2.m_area) return n1.m_radius - n2.m_radius;
@@ -398,6 +473,21 @@ var js_pcb = js_pcb || {};
 		{
 			this.m_netlist.shuffle();
 			for (let net of this.m_netlist) net.shuffle_topology();
+		}
+
+		hoist_net(n)
+		{
+			let i = 0;
+			if (n != 0)
+			{
+				for (i = n; i >= 0; --i) if (this.m_netlist[i].m_area < this.m_netlist[n].m_area) break;
+				i++;
+				if (n != i)
+				{
+					this.m_netlist.move(n, i);
+				}
+			}
+			return i;
 		}
 
 		hoist_net_ori(n)
@@ -467,13 +557,15 @@ var js_pcb = js_pcb || {};
 			// ffy-comment: for net ordering
 			this.x_diff = Math.abs(this.m_bbox[2] - this.m_bbox[0]);
 			this.y_diff = Math.abs(this.m_bbox[3] - this.m_bbox[1]);
-			this.congest = 0;
+			this.m_set = 1;
+			this.m_label = 0;
 		}
 
 		//randomize order of terminals
+		// ffy comment: don't randomize order for now
 		shuffle_topology()
 		{
-			this.m_terminals.shuffle();
+			//this.m_terminals.shuffle();
 		}
 
 		//add terminal entries to spacial cache
