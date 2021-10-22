@@ -168,7 +168,12 @@ var js_pcb = js_pcb || {};
 				k_max -= 1;
 				for(let i = 0; i < this.m_netlist.length; ++i) {
 					if(this.m_netlist[i].m_label == k_max) {
-						this.m_netlist[idx].m_set = 0;
+						if(this.m_netlist[i].m_terminals[1][2][1] < this.m_netlist[idx].m_terminals[1][2][1]) {
+							
+							this.m_netlist[i].m_set = 0;
+							idx = i;
+							break;
+						}
 					}
 				}
 			}
