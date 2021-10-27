@@ -168,8 +168,11 @@ var js_pcb = js_pcb || {};
 				k_max -= 1;
 				for(let i = 0; i < this.m_netlist.length; ++i) {
 					if(this.m_netlist[i].m_label == k_max) {
-						if(this.m_netlist[i].m_terminals[1][2][1] < this.m_netlist[idx].m_terminals[1][2][1]) {
-							
+						/*console.log(this.m_netlist[idx].m_terminals[0][2][0], this.m_netlist[idx].m_terminals[0][2][1]);
+						console.log(this.m_netlist[idx].m_terminals[1][2][0], this.m_netlist[idx].m_terminals[1][2][1]);
+						console.log(this.m_netlist[i].m_terminals[0][2][0], this.m_netlist[i].m_terminals[0][2][1]);
+						console.log(this.m_netlist[i].m_terminals[1][2][0], this.m_netlist[i].m_terminals[1][2][1]);*/
+						if(this.m_netlist[i].m_terminals[1][2][1] <= this.m_netlist[idx].m_terminals[1][2][1]) {
 							this.m_netlist[i].m_set = 0;
 							idx = i;
 							break;
@@ -177,12 +180,33 @@ var js_pcb = js_pcb || {};
 					}
 				}
 			}
-		};
+		}
+
+		calculate_crossing() {
+			for(let i = 0; i < this.m_netlist.length; ++i) {
+				if(this.m_netlist[i].m_set == 1) {
+					for(let j = 0; j < this.m_netlist.length; ++j) {
+						if(this.m_netlist[i].m_terminals[0][2][1] < this.m_netlist[j].m_terminals[0][2][1]) {
+							if(this.m_netlist[i].m_terminals[1][2][1] > this.m_netlist[j].m_terminals[1][2][1]) {
+								this.m_netlist[i].m_cross += 1;
+							}
+						}
+						else {
+							if(this.m_netlist[i].m_terminals[1][2][1] < this.m_netlist[j].m_terminals[1][2][1]) {
+								this.m_netlist[i].m_cross += 1;
+							}
+						}						
+					}
+				}				
+			}
+			
+		}
 
 		reset_label() {
 			for(let i = 0; i < this.m_netlist.length; ++i) {
 				this.m_netlist[i].m_label = 0;
 				this.m_netlist[i].m_set = 1;
+				this.m_cross = 0;
 			}
 		}
 
@@ -193,16 +217,18 @@ var js_pcb = js_pcb || {};
 			this.remove_netlist();
 			this.unmark_distances();
 			this.shuffle_netlist();
-			this.maximum_noncrossing_matching();
+			
 
 			// ffy-comment: order netlist
-			//this.show_netlist();
-			//this.net_ordering_ori();
+			this.maximum_noncrossing_matching();
+			//this.calculate_crossing();
 			this.net_ordering();
+			//this.net_ordering_ori();
 			// ffy comment: Set to store nets that cannot complete routing.
 			let hoisted_nets = new Set();
 			let index = 0;
 	//		let start_time = std::chrono::high_resolution_clock::now();
+			var t_start = Date.now();
 			// ffy comment: net with small area will route first.
 			while (index < this.m_netlist.length)
 			{
@@ -214,6 +240,7 @@ var js_pcb = js_pcb || {};
 						this.shuffle_netlist();
 						this.reset_label();
 						this.maximum_noncrossing_matching();
+						//this.calculate_crossing();
 						this.net_ordering();
 						//this.net_ordering_ori();
 						hoisted_nets.clear();
@@ -254,6 +281,8 @@ var js_pcb = js_pcb || {};
 				if (this.m_verbosity >= 1) postMessage([this.output_pcb(), 0]);
 			
 			}
+			var t_end = Date.now();
+			console.log(t_end - t_start);
 			return true;
 		}
 
@@ -458,8 +487,11 @@ var js_pcb = js_pcb || {};
 			this.m_netlist.sort(function(n1, n2)
 			{
 				if(n1.m_set == n2.m_set) {
-					if (n1.m_area === n2.m_area) return n1.m_radius - n2.m_radius;
-					return n1.m_area - n2.m_area;
+						if (n1.m_area === n2.m_area) {
+							if(n1.m_cross == n2.m_cross) return n1.m_radius - n2.m_radius;
+							return n1.m_corss - n2.m_cross;
+						}
+						return n1.m_area - n2.m_area;
 				}
 				else { 
 					return n1.m_set - n2.m_set;
@@ -560,6 +592,7 @@ var js_pcb = js_pcb || {};
 			this.y_diff = Math.abs(this.m_bbox[3] - this.m_bbox[1]);
 			this.m_set = 1;
 			this.m_label = 0;
+			this.m_cross = 0;
 		}
 
 		//randomize order of terminals
@@ -694,12 +727,14 @@ var js_pcb = js_pcb || {};
 			let via_vectors = this.m_pcb.m_via_vectors;
 			let path = [];
 			let path_node = end_node;
+			let via_num = 0;
 			for (;;)
 			{
 				path.push(path_node);
 				//console.log('At', path_node, this.m_pcb.get_node(path_node));
 				let nearer_nodes = [];
 				let m_n = [];
+				
 				// Routing vector of this layer
 				for (let node of this.m_pcb.all_not_shorting(
 					this.m_pcb.all_nearer_sorted(this.m_pcb.m_routing_path_vectors, path_node, this.m_pcb.m_dfunc, 0),
@@ -715,7 +750,7 @@ var js_pcb = js_pcb || {};
 					path_node, via, gap))
 				{
 					nearer_nodes.push(node);
-					//m_n.push(node);
+					m_n.push(node);
 				}
 
 				//m_n.sort((a, b)=>{return a[0] - b[0]});
@@ -727,10 +762,15 @@ var js_pcb = js_pcb || {};
 				{
 					//found existing track
 					path.push(search);
+					//console.log(via_num, this.m_cross);
+					via_num = 0;
 					return [path, true];
 				}
 				// ffy comment: Set path_node to current node's nearest node, avoid using via
 				path_node = nearer_nodes[0];
+				if(nearer_nodes[0] === m_n[0]) {
+					via_num += 1;
+				}
 			}
 		}
 
@@ -738,6 +778,7 @@ var js_pcb = js_pcb || {};
 		route()
 		{
 			//check for unused terminals track
+			//if(this.m_set == 1) return true; 
 			if (this.m_radius === 0.0) return true;
 			this.m_paths = [];
 			this.sub_terminal_collision_lines();

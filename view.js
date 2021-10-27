@@ -123,15 +123,32 @@ var js_pcb = js_pcb || {};
 			for (let path of paths)
 			{
 				let terminal_z = path[0][2];
+				let via_cnt = 0;
+				for(let i = 1; i < path.length; ++i) {
+					if(terminal_z !== path[i][2]) {
+						via_cnt += 1;
+					}
+					terminal_z = path[i][2];
+				}
+				terminal_z = path[0][2];
 				for (let node = 1; node < path.length; ++node)
 				{
 					if (terminal_z !== path[node][2])
 					{
+						if(true || via_cnt < 4) {
 						layers[layers.length-1].append("circle")
 							.attr("cx", path[node][0])
 							.attr("cy", path[node][1])
 							.attr("r", via_radius)
 							.attr("fill", "blue");
+						}
+						else {
+							layers[layers.length-1].append("circle")
+							.attr("cx", path[node][0])
+							.attr("cy", path[node][1])
+							.attr("r", via_radius)
+							.attr("fill", "purple");
+						}
 						
 						let pos_x = path[node][0];
 						let pos_y = path[node][1];
@@ -165,7 +182,7 @@ var js_pcb = js_pcb || {};
 		if(show_result == 1) {
 			console.log("approximate wire length = " + wire_length);
 			console.log("via number = " + via_num);
-			console.log("close via pair = " + close_pair);
+			//sconsole.log("close via pair = " + close_pair);
 		}
 	}
 	
