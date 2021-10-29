@@ -103,6 +103,9 @@ var js_pcb = js_pcb || {};
 			this.m_nodes = new Uint32Array(this.m_stride * this.m_depth);
 			this.m_via_vectors = [[[0, 0, -1], [0, 0, 1]], [[0, 0, -1], [0, 0, 1]]];
 
+			// array to store perpendicular routing vector
+			this.m_arr_perpendicular = [];
+
 		}
 
 		//add net
@@ -210,6 +213,34 @@ var js_pcb = js_pcb || {};
 			}
 		}
 
+		// Function to find perpendicular  routing vectors 
+		find_perpendicular () {
+			let arr_per_even = [], arr_per_odd = [];
+			// ffy-comment: There are two groups of routing vector, for odd layer and even layer
+			for(let i = 0; i < this.m_routing_path_vectors.length; ++i) {
+				//ffy-comment: There are 10 directions => 10 routing vectors in each group
+				for(let j = 0; j < this.m_routing_path_vectors[i].length; ++j) {
+					let cmp_vec = this.m_routing_path_vectors[i][j];
+					let arr_tmp = [];
+					for(let k = 0; k < this.m_routing_path_vectors[i].length; ++k) {
+						let tmp_vec = this.m_routing_path_vectors[i][k];
+						let dot = cmp_vec[0] * tmp_vec[0] + cmp_vec[1] * tmp_vec[1];
+						// Use dot rpoduct to determine whether two vectors are perpendicular
+						if(dot == 0) {
+							arr_tmp.push(j);
+						}
+					}
+					if(i == 0) 
+						arr_per_even.push(arr_tmp);
+					else 
+						arr_per_odd.push(arr_tmp);
+				}
+			}
+			arr_per_odd.push([]);
+			arr_per_even.push([]);
+			this.m_arr_perpendicular = [arr_per_even , arr_per_odd];
+		}
+
 
 		//attempt to route board within time
 		async route(timeout)
@@ -226,6 +257,8 @@ var js_pcb = js_pcb || {};
 			this.calculate_crossing();
 			this.net_ordering();
 			//this.net_ordering_ori();
+			this.find_perpendicular();
+
 			// ffy comment: Set to store nets that cannot complete routing.
 			let hoisted_nets = new Set();
 			let index = 0;
@@ -431,6 +464,30 @@ var js_pcb = js_pcb || {};
 			}
 			return nodes;
 		}
+
+		// ffy-comment: check if the path will generate a right angle
+		not_perpendicular(cur_vec, prev_vec, layer)
+		{
+			let p_idx = 10, c_idx;
+			for(let i = 0; i < this.m_routing_path_vectors[layer].length; ++i) {
+				let tmp_vec = this.m_routing_path_vectors[layer][i];
+				if(tmp_vec[0] == cur_vec[0] && tmp_vec[1] == cur_vec[1])
+					c_idx = i;
+				if(tmp_vec[0] == prev_vec[0] && tmp_vec[1] == prev_vec[1])
+					p_idx = i;
+			}
+			console.log(p_idx, c_idx);
+			console.log(prev_vec, cur_vec);
+			for(let i = 0; i < this.m_arr_perpendicular[layer][p_idx].length; ++i) {
+				//console.log(this.m_arr_perpendicular[layer][p_idx][i], c_idx);
+				if(this.m_arr_perpendicular[layer][p_idx][i] == c_idx) {
+					//console.log('ff');
+					return false;
+				}
+			}
+			return true;
+		}
+
 
 		//flood fill distances from starts till ends covered
 		// ffy comment: Perform A* like algorithm to mark the distance form starts to ends 
@@ -729,20 +786,28 @@ var js_pcb = js_pcb || {};
 			let via_vectors = this.m_pcb.m_via_vectors;
 			let path = [];
 			let path_node = end_node;
-			let via_num = 0;
+			let prev_vec = [3, 2];
+			//let via_num = 0;
 			for (;;)
 			{
 				path.push(path_node);
 				//console.log('At', path_node, this.m_pcb.get_node(path_node));
 				let nearer_nodes = [];
 				let m_n = [];
+				let flag = false;
 				
 				// Routing vector of this layer
 				for (let node of this.m_pcb.all_not_shorting(
 					this.m_pcb.all_nearer_sorted(this.m_pcb.m_routing_path_vectors, path_node, this.m_pcb.m_dfunc, 0),
 					path_node, radius, gap))
 				{
-					nearer_nodes.push(node);
+					let p_x = node[0] - path_node[0];
+					let p_y = node[1] - path_node[1];
+					
+					if(this.m_pcb.not_perpendicular([p_x, p_y], prev_vec, path_node[2])) {
+						nearer_nodes.push(node);
+						flag = true;
+					}
 					//m_n.push(node);
 				}
 			
@@ -752,7 +817,7 @@ var js_pcb = js_pcb || {};
 					path_node, via, gap))
 				{
 					nearer_nodes.push(node);
-					m_n.push(node);
+					//m_n.push(node);
 				}
 
 				//m_n.sort((a, b)=>{return a[0] - b[0]});
@@ -765,14 +830,18 @@ var js_pcb = js_pcb || {};
 					//found existing track
 					path.push(search);
 					//console.log(via_num, this.m_cross);
-					via_num = 0;
+					//via_num = 0;
 					return [path, true];
 				}
 				// ffy comment: Set path_node to current node's nearest node, avoid using via
+				if(flag)
+					prev_vec = [nearer_nodes[0][0] - path_node[0], nearer_nodes[0][1] - path_node[1]];
+				else 
+					prev_vec = [3, 2];
 				path_node = nearer_nodes[0];
-				if(nearer_nodes[0] === m_n[0]) {
+				/*if(nearer_nodes[0] === m_n[0]) {
 					via_num += 1;
-				}
+				}*/
 			}
 		}
 
