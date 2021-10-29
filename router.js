@@ -214,6 +214,8 @@ var js_pcb = js_pcb || {};
 		//attempt to route board within time
 		async route(timeout)
 		{
+			var t_start = Date.now();
+
 			this.remove_netlist();
 			this.unmark_distances();
 			this.shuffle_netlist();
@@ -221,14 +223,14 @@ var js_pcb = js_pcb || {};
 
 			// ffy-comment: order netlist
 			this.maximum_noncrossing_matching();
-			//this.calculate_crossing();
+			this.calculate_crossing();
 			this.net_ordering();
 			//this.net_ordering_ori();
 			// ffy comment: Set to store nets that cannot complete routing.
 			let hoisted_nets = new Set();
 			let index = 0;
 	//		let start_time = std::chrono::high_resolution_clock::now();
-			var t_start = Date.now();
+			
 			// ffy comment: net with small area will route first.
 			while (index < this.m_netlist.length)
 			{
@@ -240,7 +242,7 @@ var js_pcb = js_pcb || {};
 						this.shuffle_netlist();
 						this.reset_label();
 						this.maximum_noncrossing_matching();
-						//this.calculate_crossing();
+						this.calculate_crossing();
 						this.net_ordering();
 						//this.net_ordering_ori();
 						hoisted_nets.clear();
@@ -494,7 +496,7 @@ var js_pcb = js_pcb || {};
 						return n1.m_area - n2.m_area;
 				}
 				else { 
-					return n1.m_set - n2.m_set;
+					return (n1.m_set - n2.m_set);
 				}
 			});
 		}
