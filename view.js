@@ -49,6 +49,7 @@ var js_pcb = js_pcb || {};
 		let w = ( margin * scale * 2 + width * scale);
 		let h = ( margin * scale * 2 + height * scale);
 		let via_map = new Int8Array(w * h);
+		let term_map = new Int8Array(w * h);
 
 		//add tracks
 		for (let track of pcb_data[1])
@@ -84,6 +85,20 @@ var js_pcb = js_pcb || {};
 					
 					wire_length += node - start;
 				}
+			}
+		}
+		
+
+		// ffy comment: add terminal to term_map for debug
+		for(let track of pcb_data[1]) {
+			let track_radius, via_radius, track_gap, terminals, paths;
+			[track_radius, via_radius, track_gap, terminals, paths] = track;
+			for(let terminal of terminals) {
+				let terminal_radius, terminal_gap, terminal_x, terminal_y, terminal_z, terminal_shape;
+				[terminal_radius, terminal_gap, [terminal_x, terminal_y, terminal_z],  terminal_shape] = terminal;
+				let t_x = Math.trunc(terminal_x + 0.5);
+				let t_y = Math.trunc(terminal_y + 0.5);
+				term_map[t_y * w + t_x] = 1;
 			}
 		}
 
@@ -133,9 +148,30 @@ var js_pcb = js_pcb || {};
 				terminal_z = path[0][2];
 				for (let node = 1; node < path.length; ++node)
 				{
+					let f = 1;
+					let pos_x = path[node][0];
+					let pos_y = path[node][1];
+					// ffy comment: It is only for 2 layer
+					for(let i = 1; i < 3; ++i) {
+						for(let j = 0; j <= i; ++j) {
+							let k = i - j;
+							if(term_map[(pos_y - k) * w + pos_x - j] == 1) {
+								f = 0;
+							}
+							if(term_map[(pos_y - k) * w + pos_x + j] == 1) {
+								f = 0;
+							}
+							if(term_map[(pos_y + k) * w + pos_x - j] == 1) {
+								f = 0;
+							}
+							if(term_map[(pos_y + k) * w + pos_x + j] == 1) {
+								f = 0;
+							}
+						}
+					}
 					if (terminal_z !== path[node][2])
 					{
-						if(true || via_cnt < 4) {
+						if(f == 1) {
 						layers[layers.length-1].append("circle")
 							.attr("cx", path[node][0])
 							.attr("cy", path[node][1])
@@ -150,26 +186,7 @@ var js_pcb = js_pcb || {};
 							.attr("fill", "purple");
 						}
 						
-						let pos_x = path[node][0];
-						let pos_y = path[node][1];
-						// ffy comment: It is only for 2 layer
-						for(let i = 1; i < 4; ++i) {
-							for(let j = 0; j <= i; ++j) {
-								let k = i - j;
-								if(via_map[(pos_y - k) * w + pos_x - j] == 1) {
-									close_pair += 1;
-								}
-								if(via_map[(pos_y - k) * w + pos_x + j] == 1) {
-									close_pair += 1;
-								}
-								if(via_map[(pos_y + k) * w + pos_x - j] == 1) {
-									close_pair += 1;
-								}
-								if(via_map[(pos_y + k) * w + pos_x + j] == 1) {
-									close_pair += 1;
-								}
-							}
-						}
+						
 						via_map[pos_y * w + pos_x] = 1;
 						via_num += 1;
 					}

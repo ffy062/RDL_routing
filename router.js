@@ -105,6 +105,7 @@ var js_pcb = js_pcb || {};
 
 			// array to store perpendicular routing vector
 			this.m_arr_perpendicular = [];
+			this.m_term_map = new Uint32Array(this.m_stride);
 
 		}
 
@@ -227,7 +228,7 @@ var js_pcb = js_pcb || {};
 						let dot = cmp_vec[0] * tmp_vec[0] + cmp_vec[1] * tmp_vec[1];
 						// Use dot rpoduct to determine whether two vectors are perpendicular
 						if(dot == 0) {
-							arr_tmp.push(j);
+							arr_tmp.push(k);
 						}
 					}
 					if(i == 0) 
@@ -240,6 +241,18 @@ var js_pcb = js_pcb || {};
 			arr_per_even.push([]);
 			this.m_arr_perpendicular = [arr_per_even , arr_per_odd];
 		}
+		 // Function to map all terminal to terminal array
+		 find_term() {
+			 this.m_term_map.forEach(element => {element = 0;});
+			 for(let i = 0; i < this.m_netlist.length - 1; ++i) {
+				 let cur_nlist = this.m_netlist[i];
+				 for(let j = 0; j < cur_nlist.m_terminals.length; ++j) {
+					let t_x = Math.trunc(cur_nlist.m_terminals[j][2][0]+0.5);
+					let t_y = Math.trunc(cur_nlist.m_terminals[j][2][1]+0.5);
+					this.m_term_map[t_x + t_y * this.m_width] = 1;
+				}
+			 }
+		 }
 
 
 		//attempt to route board within time
@@ -258,6 +271,7 @@ var js_pcb = js_pcb || {};
 			this.net_ordering();
 			//this.net_ordering_ori();
 			this.find_perpendicular();
+			this.find_term();
 
 			// ffy comment: Set to store nets that cannot complete routing.
 			let hoisted_nets = new Set();
@@ -476,13 +490,12 @@ var js_pcb = js_pcb || {};
 				if(tmp_vec[0] == prev_vec[0] && tmp_vec[1] == prev_vec[1])
 					p_idx = i;
 			}
-			console.log(p_idx, c_idx);
-			console.log(prev_vec, cur_vec);
+
 			for(let i = 0; i < this.m_arr_perpendicular[layer][p_idx].length; ++i) {
 				//console.log(this.m_arr_perpendicular[layer][p_idx][i], c_idx);
 				if(this.m_arr_perpendicular[layer][p_idx][i] == c_idx) {
-					//console.log('ff');
-					return false;
+					//console.log(cur_vec, prev_vec);
+					//return false;
 				}
 			}
 			return true;
@@ -803,14 +816,12 @@ var js_pcb = js_pcb || {};
 				{
 					let p_x = node[0] - path_node[0];
 					let p_y = node[1] - path_node[1];
-					
 					if(this.m_pcb.not_perpendicular([p_x, p_y], prev_vec, path_node[2])) {
 						nearer_nodes.push(node);
 						flag = true;
 					}
 					//m_n.push(node);
 				}
-			
 				// Routing vector of via
 				for (let node of this.m_pcb.all_not_shorting(
 					this.m_pcb.all_nearer_sorted(via_vectors, path_node, this.m_pcb.m_dfunc, 0),
@@ -834,10 +845,12 @@ var js_pcb = js_pcb || {};
 					return [path, true];
 				}
 				// ffy comment: Set path_node to current node's nearest node, avoid using via
-				if(flag)
+				if(flag) {
 					prev_vec = [nearer_nodes[0][0] - path_node[0], nearer_nodes[0][1] - path_node[1]];
-				else 
+				}
+				else {
 					prev_vec = [3, 2];
+				}
 				path_node = nearer_nodes[0];
 				/*if(nearer_nodes[0] === m_n[0]) {
 					via_num += 1;
