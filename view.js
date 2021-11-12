@@ -145,6 +145,9 @@ var js_pcb = js_pcb || {};
 					}
 					terminal_z = path[i][2];
 				}
+				if(show_result) {
+					//console.log(via_cnt);
+				}
 				terminal_z = path[0][2];
 				for (let node = 1; node < path.length; ++node)
 				{
@@ -171,7 +174,7 @@ var js_pcb = js_pcb || {};
 					}
 					if (terminal_z !== path[node][2])
 					{
-						if(f == 1) {
+						if(true || f == 1) {
 						layers[layers.length-1].append("circle")
 							.attr("cx", path[node][0])
 							.attr("cy", path[node][1])

@@ -188,20 +188,7 @@ var js_pcb = js_pcb || {};
 
 		calculate_crossing() {
 			for(let i = 0; i < this.m_netlist.length; ++i) {
-				if(this.m_netlist[i].m_set == 1) {
-					for(let j = 0; j < this.m_netlist.length; ++j) {
-						if(this.m_netlist[i].m_terminals[0][2][1] < this.m_netlist[j].m_terminals[0][2][1]) {
-							if(this.m_netlist[i].m_terminals[1][2][1] > this.m_netlist[j].m_terminals[1][2][1]) {
-								this.m_netlist[i].m_cross += 1;
-							}
-						}
-						else {
-							if(this.m_netlist[i].m_terminals[1][2][1] < this.m_netlist[j].m_terminals[1][2][1]) {
-								this.m_netlist[i].m_cross += 1;
-							}
-						}						
-					}
-				}				
+				this.m_netlist[i].m_cross = Math.abs(this.m_netlist[i].x_diff - this.m_netlist[i].y_diff);
 			}
 			
 		}
@@ -272,6 +259,11 @@ var js_pcb = js_pcb || {};
 			//this.net_ordering_ori();
 			this.find_perpendicular();
 			this.find_term();
+			let sum = 0;
+			/*for(let i = 0; i < this.m_netlist.length-1; ++i) {
+				sum += this.m_netlist[i].x_diff;
+				console.log(this.m_netlist[i].x_diff - this.m_netlist[i].y_diff, this.m_netlist[i].m_set);
+			}*/
 
 			// ffy comment: Set to store nets that cannot complete routing.
 			let hoisted_nets = new Set();
@@ -304,7 +296,8 @@ var js_pcb = js_pcb || {};
 						{
 							// ffy comment: If pos is 0, the net has the highest priority
 							if (pos !== 0)
-							{
+							{	
+								//console.log(this.m_netlist[pos].x_diff - this.m_netlist[pos].y_diff);
 								// ffy comment: Decrease m_area of the net for higher routing priority
 								this.m_netlist[pos].m_area = this.m_netlist[pos-1].m_area;
 								// ffy comment: Move netlist[pos] to the top of all nets with same m_area 
@@ -560,8 +553,8 @@ var js_pcb = js_pcb || {};
 			{
 				if(n1.m_set == n2.m_set) {
 						if (n1.m_area === n2.m_area) {
-							if(n1.m_cross == n2.m_cross) return n1.m_radius - n2.m_radius;
-							return n1.m_corss - n2.m_cross;
+							if(n1.m_cross === n2.m_cross) return n1.m_radius - n2.m_radius;
+							return n1.m_cross - n2.m_cross;
 						}
 						return n1.m_area - n2.m_area;
 				}
@@ -862,7 +855,7 @@ var js_pcb = js_pcb || {};
 		route()
 		{
 			//check for unused terminals track
-			//if(this.m_set == 1) return true; 
+			//if(this.m_set == 0) return true; 
 			if (this.m_radius === 0.0) return true;
 			this.m_paths = [];
 			this.sub_terminal_collision_lines();
