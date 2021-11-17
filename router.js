@@ -320,6 +320,11 @@ var js_pcb = js_pcb || {};
 	//			let end_time = std::chrono::high_resolution_clock::now();
 	//			std::chrono::duration<float> elapsed = end_time - start_time;
 	//			if (elapsed.count() >= timeout) return false;
+				let cur_t = Date.now();
+				if(cur_t - t_start >= 100000) {
+					console.log('???');
+					return false;
+				}
 				if (this.m_verbosity >= 1) postMessage([this.output_pcb(), 0]);
 			
 			}
@@ -488,7 +493,7 @@ var js_pcb = js_pcb || {};
 				//console.log(this.m_arr_perpendicular[layer][p_idx][i], c_idx);
 				if(this.m_arr_perpendicular[layer][p_idx][i] == c_idx) {
 					//console.log(cur_vec, prev_vec);
-					//return false;
+					return false;
 				}
 			}
 			return true;
