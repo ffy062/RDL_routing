@@ -1,8 +1,6 @@
-# JS-PCB
 
-![](./test3.png)
 
-## JavaScript PCB router and solver.
+# JavaScript PCB router and solver.
 
 Uses JS6 features so you need an up to date browser ! Known to work in Chrome
 and Firefox on OSX.
