@@ -1,6 +1,6 @@
 (pcb "madeByPython"
-    (resolution mil 10)
-    (unit mil)
+    (resolution um 10)
+    (unit um)
     (structure
     (layer F.Cu
       (type signal)
@@ -19,15 +19,9 @@
     )
     (via "Via[0-1]_889:635_um" "Via[0-1]_889:0_um")
     (rule
-      (width 500)
-      (clearance 1000)
-      (clearance 1000 (type default_smd))
-    )
-    (rule
       (width 154)
       (clearance 5.1)
       (clearance 5.1 (type default_smd))
-      
     )
     )
     (placement

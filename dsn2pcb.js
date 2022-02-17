@@ -172,8 +172,12 @@ var js_pcb = js_pcb || {};
 		}
 
 		let tree = read_tree(stream);
+		// ffy-comment: Adjust resloution
+		let res_root = search_tree(tree, "resolution");
+		let adj_res = res_root[1][1][0] / 10;
+
 		let structure_root = search_tree(tree, "structure");
-		const units = 1000.0;
+		const units = 1000.0 / adj_res;
 		let num_layers = 0;
 		let minx = 1000000.0;
 		let miny = 1000000.0;
@@ -206,6 +210,7 @@ var js_pcb = js_pcb || {};
 						default_rule[1] = parseFloat(rule_node[1][0]) / (2 * units);
 					}
 				}
+				
 			}
 			else if (structure_node[0] === "boundary")
 			{

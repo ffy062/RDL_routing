@@ -71,7 +71,7 @@ var js_pcb = js_pcb || {};
 						layers[d].append("path")
 							.attr("stroke-width", track_radius * 2)
 							.attr("d", path_func(path.slice(start, node)));
-						
+							
 						wire_length += node - start;
 					}
 					start = node;

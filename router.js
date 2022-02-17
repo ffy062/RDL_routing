@@ -461,6 +461,29 @@ var js_pcb = js_pcb || {};
 			//return marked_nodes;
 		}
 
+		// ffy-comment: d stands for detour
+		all_nearer_sorted_d(vec, n, dfunc, shift)
+		{
+			let gsp = this.grid_to_space_point;
+			let gp = gsp.call(this, n);
+			let distance = this.get_node(n);
+			// ffy comment: mn : [0] mark distance calculate in mark_distance(), [1] node info
+			let marked_nodes = this.all_marked(vec, n, shift).filter((mn) =>
+			{
+				// ffy comment: Since we are finding path from end to start, the distance we choose must 
+				// be smaller then the current distance.
+				//console.log('seek', mn[1], mn[0]);
+				//if ((distance - mn[0]) > 0) return false;
+				// ffy comment: use the selected distance function to calculate distance between nearby points.
+				mn[0] = dfunc(gsp.call(this, mn[1]), gp);
+				return true;
+			});
+			marked_nodes.sort(function(s1, s2) { return s1[0] - s2[0]; });
+	
+			return marked_nodes.map(function(mn) { return mn[1]; });
+			//return marked_nodes;
+		}
+
 		//generate all grid points surrounding node that are not shorting with an existing track
 		all_not_shorting(gather, n, radius, gap)
 		{
@@ -493,7 +516,7 @@ var js_pcb = js_pcb || {};
 				//console.log(this.m_arr_perpendicular[layer][p_idx][i], c_idx);
 				if(this.m_arr_perpendicular[layer][p_idx][i] == c_idx) {
 					//console.log(cur_vec, prev_vec);
-					return false;
+					//return false;
 				}
 			}
 			return true;
@@ -798,6 +821,7 @@ var js_pcb = js_pcb || {};
 			let path = [];
 			let path_node = end_node;
 			let prev_vec = [3, 2];
+			let tmp = 0;
 			//let via_num = 0;
 			for (;;)
 			{
@@ -806,6 +830,7 @@ var js_pcb = js_pcb || {};
 				let nearer_nodes = [];
 				let m_n = [];
 				let flag = false;
+				let per_num = 0;
 				
 				// Routing vector of this layer
 				for (let node of this.m_pcb.all_not_shorting(
@@ -818,6 +843,42 @@ var js_pcb = js_pcb || {};
 						nearer_nodes.push(node);
 						flag = true;
 					}
+				/*	else {
+						let n_vec = [];
+						let c_x = (p_x > 0)? 1 : -1;
+						let c_y = (p_y > 0)? 1 : -1;
+						let d_x = (prev_vec[0] > 0)? 1 : -1;
+						let d_y = (prev_vec[1] > 0)? 1 : -1;
+						if(p_x == prev_vec[0]) {
+							n_vec = [c_x, 0, 0];
+						}
+						else if(p_y == prev_vec[1]) {
+							n_vec = [0, c_y, 0];
+						}
+						else {
+							if(p_x == 0) {
+								n_vec = [d_x, c_y, 0];
+							}
+							else {
+								n_vec = [c_x, d_y, 0];
+							}
+						}
+						let nn_vec = [[n_vec], [n_vec]];
+						let tmp_n = this.m_pcb.all_nearer_sorted_d(nn_vec, path_node, this.m_pcb.m_dfunc, 0);
+						let tmp_nn = this.m_pcb.all_not_shorting(tmp_n, path_node, radius, gap);
+						if(tmp_nn.length != 0) {
+							//console.log('aa');
+							nearer_nodes.push(tmp_nn[0]);
+							//nearer_nodes.push(node);
+							flag = true;
+						}
+						else {
+							console.log('bb');
+							nearer_nodes.push(node);
+						}
+						
+						per_num += 1;
+					}*/
 					//m_n.push(node);
 				}
 				// Routing vector of via
@@ -831,7 +892,37 @@ var js_pcb = js_pcb || {};
 
 				//m_n.sort((a, b)=>{return a[0] - b[0]});
 				//nearer_nodes = m_n.map(function(mn) { return mn[1]; });
+				if(tmp == 1) {
+					if(path.length == 1) return [[], false];
 
+					if(nearer_nodes.length == 1) {
+						path_node = path[path.length - 2];
+						if(path.length > 2) { 
+							prev_vec = [path[path.length - 2][0] - path[path.length - 2][1], path[path.length - 3][0] - path[path.length - 3][1]];
+						}
+						else {
+							prev_vec = [3, 2];
+						}
+						path.pop();
+						path.pop();
+						continue;
+					}
+				}
+				if(per_num > 0 && !nearer_nodes.length) {
+					if(tmp == 0) {
+						path_node = path[path.length - 2];
+						if(path.length > 2) { 
+							prev_vec = [path[path.length - 2][0] - path[path.length - 2][1], path[path.length - 3][0] - path[path.length - 3][1]];
+						}
+						else {
+							prev_vec = [3, 2];
+						}
+						path.pop();
+						path.pop();
+						tmp = 1;
+						continue;
+					}
+				}
 				if (!nearer_nodes.length) return [[], false];
 				let search = nearer_nodes.find(function(node) { return visited.has(node); });
 				if (search !== undefined)
@@ -849,7 +940,8 @@ var js_pcb = js_pcb || {};
 				else {
 					prev_vec = [3, 2];
 				}
-				path_node = nearer_nodes[0];
+				path_node = nearer_nodes[tmp];
+				tmp = 0;
 				/*if(nearer_nodes[0] === m_n[0]) {
 					via_num += 1;
 				}*/
